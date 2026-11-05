@@ -1,0 +1,23 @@
+{
+  "name": "grubtheme-test",
+  "description": "A CLI tool that allows for previewing GRUB themes, using QEMU as a base",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "qemu-img-ts": "^0.1.2"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "private": true,
+  "engines": {
+    "bun": "1.3.14"
+  }
+}
