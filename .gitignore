@@ -14,7 +14,6 @@ yarn-error.log*
 .vscode/*
 ./dist
 .DS_Store
-.idea
 dist
 parse.ts
 tests.ts
@@ -43,7 +42,7 @@ package-lock.json
 .env.*
 !.env.example
 
-.idea/
+.idea
 !.idea/dictionaries
 test.ts
 

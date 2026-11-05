@@ -9,7 +9,6 @@ import { QemuError } from '../erros';
  * @throws {QemuError} Throws an error if the command exits with a non-zero code containing command details.
  */
 export async function runner(args: string[]): Promise<string> {
-	console.log(['qemu-system-x86_64', ...args].join(' '));
 	const proc = Bun.spawn(['qemu-system-x86_64', ...args], {
 		stdout: 'pipe',
 		stderr: 'pipe',
