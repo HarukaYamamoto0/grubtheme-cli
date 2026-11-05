@@ -1,4 +1,4 @@
-import {QemuError} from '../erros';
+import { QemuError } from '../erros';
 
 /**
  * Executes the QEMU command with the specified arguments and returns the standard output.
@@ -14,12 +14,12 @@ export async function runner(args: string[]): Promise<string> {
 		stdout: 'pipe',
 		stderr: 'pipe',
 	});
-	
+
 	const stdout = await new Response(proc.stdout).text();
 	const stderr = await new Response(proc.stderr).text();
-	
+
 	const exitCode = await proc.exited;
-	
+
 	if (exitCode !== 0) {
 		throw new QemuError({
 			args,
@@ -28,6 +28,6 @@ export async function runner(args: string[]): Promise<string> {
 			stderr,
 		});
 	}
-	
+
 	return stdout;
 }
