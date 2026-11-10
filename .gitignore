@@ -47,3 +47,4 @@ package-lock.json
 test.ts
 
 grub-test.img
+preview.img

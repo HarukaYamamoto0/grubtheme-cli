@@ -1,76 +1,52 @@
-import {program} from 'commander';
-import {ImageFormat, ImageSize, QemuImg} from "qemu-img-ts";
-import {DiskDriver} from "../drivers/disk";
-import {LoopDeviceDriver} from "../drivers/loopDevice";
-import {Formatter} from "../drivers/formatter";
-import {runner} from "../core/runner";
+import { program } from 'commander';
+import { DEFAULT_IMG_PATH_EXTENDED, ImageDriver } from '../structures/ImageDriver';
+import { LoopDeviceDriver } from '../structures/LoopDeviceDriver';
+import { expandPath } from '../helpers/expandPath';
+import type { VideoResolution } from '../types';
+import { runQemu } from '../core/runQemu';
 
 export const previewCommand = program
 	.command('preview')
 	.description('use QEMU to boot a minimal VM in order to test a GRUB theme')
-	.argument("<path>", "path to theme")
-	.argument("<configFile>", "path to grub.cfg")
-	.action(async (path: string, configFile: string) => {
-		const qemuImg = new QemuImg()
-		const pathToImage = "./grub-test.img"
-		
-		await qemuImg.create({
-			filename: pathToImage,
-			format: ImageFormat.RAW,
-			size: ImageSize.mb(64)
-		})
-		
-		await DiskDriver.createBootablePartition(pathToImage)
-		const loop = await LoopDeviceDriver.createLoopDevice(pathToImage)
-		
-		await Formatter.toEXT2(loop)
-		await LoopDeviceDriver.mount(loop);
-		
-		// install grub
-		await runner([
-			"sudo",
-			"grub-install",
-			"--target=i386-pc",
-			"--boot-directory=/mnt/grub-qemu-mounted/boot",
-			loop
-		])
-		
-		// // copy grub.cfg
-		// await runner([
-		// 	"sudo",
-		// 	"cp",
-		// 	configFile,
-		// 	`/mnt/grub-qemu-mounted/boot/grub/grub.cfg`
-		// ])
-		
-		await runner([
-			"sudo", "mkdir",
-			"-p",
-			"/mnt/grub-qemu-mounted/boot/grub/themes/current-theme",
-		]);
-		
-		// copy theme
-		await runner([
-			"sudo", "cp",
-			"-r",
-			`${path}/.`,
-			"/mnt/grub-qemu-mounted/boot/grub/themes/current-theme/",
-		]);
-		
-		await LoopDeviceDriver.unmount(loop)
-		await LoopDeviceDriver.detachLoopDevice(loop)
-		
-		// qemu-system-x86_64 \
-		//     -m 128M \
-		//     -drive file=grub-test.img,format=raw
-		
-		await runner([
-			"qemu-system-x86_64",
-			'-m',
-			"128M",
-			'-drive',
-			`file=grub-test.img,format=raw`
-		]);
-		console.log('preview command');
-	});
+	.argument('<path>', 'path to theme')
+	.option('-i, --image <path>', 'path to a prepared disk image ready for use with QEMU')
+	.option('-c, --config <config>', 'path to a custom grub.cfg file')
+	.option('-r, --resolution <resolution>', 'resolution supported by the QEMU video adapter')
+	.action(async (path: string, args: { image?: string; config?: string; resolution?: string }) => {
+		const themeDirectory = expandPath(path);
+		const imagePath = args.image ? expandPath(args.image) : DEFAULT_IMG_PATH_EXTENDED;
 
+		const imageDriver = new ImageDriver(imagePath);
+		const loopDevice = new LoopDeviceDriver(imagePath);
+
+		let filesystemMounted = false;
+
+		try {
+			await loopDevice.mount();
+			filesystemMounted = true;
+
+			if (!loopDevice.device) throw new Error('The device was not mounted correctly');
+			await imageDriver.mount(loopDevice.device);
+
+			if (args.config) await loopDevice.copyConfigFile(expandPath(args.config));
+
+			// TODO: Restore this flag to its original state after execution.
+			// However, the disk image must be unmounted before launching QEMU
+			// to avoid concurrent access to the underlying filesystem.
+			if (args.resolution) await loopDevice.setGrubResolution(args.resolution as VideoResolution);
+
+			await loopDevice.copyTheme(themeDirectory);
+		} finally {
+			try {
+				if (filesystemMounted) {
+					await imageDriver.unmount();
+				}
+			} finally {
+				if (loopDevice.device) {
+					await loopDevice.unmount();
+				}
+			}
+		}
+
+		await runQemu(imagePath);
+	});
