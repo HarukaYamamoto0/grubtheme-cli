@@ -25,7 +25,6 @@ export const createImageCommand = program
 	});
 
 export const deleteImageCommand = program.command('delete').action(() => {
-	Bun.gc();
 	console.log('Delete image');
 });
 

@@ -35,13 +35,13 @@ export const previewCommand = program
 			loop
 		])
 		
-		// // copy grub.cfg
-		// await runner([
-		// 	"sudo",
-		// 	"cp",
-		// 	configFile,
-		// 	`/mnt/grub-qemu-mounted/boot/grub/grub.cfg`
-		// ])
+		// copy grub.cfg
+		await runner([
+			"sudo",
+			"cp",
+			configFile,
+			`/mnt/grub-qemu-mounted/boot/grub/grub.cfg`
+		])
 		
 		await runner([
 			"sudo", "mkdir",

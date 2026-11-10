@@ -20,3 +20,9 @@
       1. copiar o tema alvo para a imagem
    2. desmontar a image e seu filesystem
 3. fechar o loop device
+
+## Comandos
+
+### preview
+
+O comando principal do
