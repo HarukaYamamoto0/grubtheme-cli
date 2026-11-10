@@ -1,4 +1,4 @@
-import { QemuError } from '../erros';
+import {QemuError} from '../erros';
 
 /**
  * Executes the QEMU command with the specified arguments and returns the standard output.
@@ -9,16 +9,17 @@ import { QemuError } from '../erros';
  * @throws {QemuError} Throws an error if the command exits with a non-zero code containing command details.
  */
 export async function runner(args: string[]): Promise<string> {
-	const proc = Bun.spawn(['qemu-system-x86_64', ...args], {
+	console.log(args.join(" "))
+	const proc = Bun.spawn(args, {
 		stdout: 'pipe',
 		stderr: 'pipe',
 	});
-
+	
 	const stdout = await new Response(proc.stdout).text();
 	const stderr = await new Response(proc.stderr).text();
-
+	
 	const exitCode = await proc.exited;
-
+	
 	if (exitCode !== 0) {
 		throw new QemuError({
 			args,
@@ -27,6 +28,6 @@ export async function runner(args: string[]): Promise<string> {
 			stderr,
 		});
 	}
-
+	
 	return stdout;
 }
