@@ -1,5 +1,7 @@
 import {QemuError} from '../erros';
 
+export type Runner = (args: string[]) => Promise<string>
+
 /**
  * Executes the QEMU command with the specified arguments and returns the standard output.
  * If the command fails, an error is thrown with details including exit code, standard output, and standard error.
