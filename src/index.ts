@@ -13,5 +13,3 @@ program.addCommand(imageCommand);
 program.addCommand(bootCommand);
 
 program.parse();
-
-export type Path = string;

@@ -1,7 +1,6 @@
-import type { Path } from '../index';
 import { runner } from './runner';
 
-export async function runQemu(imagePath: Path): Promise<void> {
+export async function runQemu(imagePath: string): Promise<void> {
 	// TODO: make better optimizations for QEMU
 	await runner([
 		'qemu-system-x86_64',
