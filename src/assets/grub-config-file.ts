@@ -1,3 +1,32 @@
+import { mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import type { VideoResolution } from '../types';
+
+export async function createGrubConfigFile(content: string, params: { resolution?: VideoResolution }): Promise<string> {
+	const tempDir = mkdtempSync(join(tmpdir(), 'grubtheme-'));
+	const tempConfigPath = join(tempDir, 'grub.cfg');
+
+	let newContent = content;
+	if (params.resolution) newContent = changeResolution(content, params.resolution);
+
+	await Bun.write(tempConfigPath, newContent);
+
+	return tempConfigPath;
+}
+
+export function changeResolution(content: string, resolution: VideoResolution): string {
+	const pattern = /^([ \t]*set[ \t]+gfxmode[ \t]*=[ \t]*)[^\r\n]*$/gm;
+	const matches = [...content.matchAll(pattern)];
+
+	if (matches.length !== 1) {
+		throw new Error(`Expected exactly one gfxmode declaration, found ${matches.length}`);
+	}
+
+	return content.replace(pattern, (_, prefix: string) => `${prefix}${resolution}`);
+}
+
+export const defaultGrubConfigTemplate = `
 # GRUB2 mock configuration for grubtheme-cli preview.
 # Based on the supplied Linux Mint grub.cfg, but does not boot an OS.
 # Install as /boot/grub/grub.cfg in the RAW image (BIOS / i386-pc).
@@ -24,7 +53,7 @@ insmod png
 insmod jpeg
 
 # Load the standard GRUB font if provided with the disk image.
-# Using `loadfont unicode` as a fallback also supports GRUB setups with
+# Using \`loadfont unicode\` as a fallback also supports GRUB setups with
 # a bundled/default font. Without a font, keep the text console usable.
 if loadfont $prefix/fonts/unicode.pf2; then
     terminal_output gfxterm
@@ -225,3 +254,4 @@ if [ -f $prefix/custom.cfg ]; then
     source $prefix/custom.cfg
 fi
 ### END /etc/grub.d/41_custom ###
+`;

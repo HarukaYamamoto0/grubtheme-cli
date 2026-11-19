@@ -1,11 +1,9 @@
 import { type Runner, runner as run } from '../core/runner';
 import type { ILoopDeviceDriver } from '../core/ILoopDeviceDriver';
 import { MOUNT_POINT_FOLDER } from './ImageDriver';
-import type { Path } from '../index';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import type { Device, VideoResolution } from '../types';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { createGrubConfigFile } from '../assets/grub-config-file';
 
 export const DEFAULT_CONFIG_PATH = './src/assets/grub-mock.cfg';
 
@@ -42,7 +40,7 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 		]);
 	}
 
-	async copyConfigFile(path?: Path): Promise<void> {
+	async copyConfigFile(path?: string): Promise<void> {
 		if (!this.device) throw new Error('There is no open device in this instance');
 		const configPath = path ? path : DEFAULT_CONFIG_PATH;
 
@@ -54,7 +52,7 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 		await this.shell(['sudo', 'cp', configPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
 	}
 
-	async copyTheme(themeDirectory: Path): Promise<void> {
+	async copyTheme(themeDirectory: string): Promise<void> {
 		if (!this.device) throw new Error('There is no open device in this instance');
 		if (!existsSync(themeDirectory))
 			throw new Error('the provided theme directory does not exist: ' + themeDirectory);
@@ -85,28 +83,12 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 			throw new Error(`Invalid GRUB resolution: ${resolution}`);
 		}
 
-		const tempDir = mkdtempSync(join(tmpdir(), 'grubtheme-'));
-		const tempConfigPath = join(tempDir, 'grub.cfg');
+		const configFile = Bun.file(`${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`);
+		const content = await configFile.text();
 
-		try {
-			const configFile = Bun.file(`${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`);
-			const content = await configFile.text();
+		const configFileTempPath = await createGrubConfigFile(content, { resolution });
 
-			const pattern = /^([ \t]*set[ \t]+gfxmode[ \t]*=[ \t]*)[^\r\n]*$/gm;
-			const matches = [...content.matchAll(pattern)];
-
-			if (matches.length !== 1) {
-				throw new Error(`Expected exactly one gfxmode declaration, found ${matches.length}`);
-			}
-
-			const updated = content.replace(pattern, (_, prefix: string) => `${prefix}${resolution}`);
-
-			await Bun.write(tempConfigPath, updated);
-
-			await this.shell(['sudo', 'cp', tempConfigPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
-		} finally {
-			rmSync(tempDir, { recursive: true, force: true });
-		}
+		await this.shell(['sudo', 'cp', configFileTempPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
 	}
 
 	async [Symbol.asyncDispose](): Promise<void> {
