@@ -1,7 +1,7 @@
 {
 	"name": "grubtheme",
 	"description": "A CLI tool that allows for previewing GRUB themes, using QEMU as a base",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
