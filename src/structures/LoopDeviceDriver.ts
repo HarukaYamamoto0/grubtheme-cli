@@ -1,11 +1,9 @@
 import { type Runner, runner as run } from '../core/runner';
 import type { ILoopDeviceDriver } from '../core/ILoopDeviceDriver';
-import { MOUNT_POINT_FOLDER } from './ImageDriver';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import type { Device, VideoResolution } from '../types';
 import { createGrubConfigFile } from '../assets/grub-config-file';
-
-export const DEFAULT_CONFIG_PATH = './src/assets/grub-mock.cfg';
+import { MOUNT_POINT_FOLDER } from '../constants';
 
 export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 	public device: Device | undefined;
@@ -40,9 +38,8 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 		]);
 	}
 
-	async copyConfigFile(path?: string): Promise<void> {
+	async copyConfigFile(configPath: string): Promise<void> {
 		if (!this.device) throw new Error('There is no open device in this instance');
-		const configPath = path ? path : DEFAULT_CONFIG_PATH;
 
 		const file = Bun.file(configPath);
 		const fileExist = await file.exists();
@@ -86,9 +83,11 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 		const configFile = Bun.file(`${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`);
 		const content = await configFile.text();
 
-		const configFileTempPath = await createGrubConfigFile(content, { resolution });
+		const configFileTempPath = await createGrubConfigFile({ content, resolution });
 
 		await this.shell(['sudo', 'cp', configFileTempPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
+
+		rmSync(configFileTempPath, { recursive: true });
 	}
 
 	async [Symbol.asyncDispose](): Promise<void> {

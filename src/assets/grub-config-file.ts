@@ -1,14 +1,17 @@
-import { mkdtempSync } from 'node:fs';
+import type { VideoResolution } from '../types';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import type { VideoResolution } from '../types';
+import { randomUUID } from 'node:crypto';
 
-export async function createGrubConfigFile(content: string, params: { resolution?: VideoResolution }): Promise<string> {
-	const tempDir = mkdtempSync(join(tmpdir(), 'grubtheme-'));
-	const tempConfigPath = join(tempDir, 'grub.cfg');
+export async function createGrubConfigFile(params?: {
+	content?: string;
+	resolution?: VideoResolution;
+}): Promise<string> {
+	const tempConfigPath = join(tmpdir(), `grub-${randomUUID()}.cfg`);
 
-	let newContent = content;
-	if (params.resolution) newContent = changeResolution(content, params.resolution);
+	let newContent = defaultGrubConfigTemplate;
+	if (params?.content) newContent = params.content;
+	if (params?.resolution) newContent = changeResolution(defaultGrubConfigTemplate, params.resolution);
 
 	await Bun.write(tempConfigPath, newContent);
 

@@ -1,16 +1,9 @@
 import type { IImageDriver } from '../core/IImageDriver';
 import { type Runner, runner as run } from '../core/runner';
-import { join } from 'node:path';
 import { rmSync } from 'node:fs';
 import { ImageFormat, ImageSize, QemuImg } from 'qemu-img-ts';
-import { expandPath } from '../helpers/expandPath';
 import type { Device } from '../types';
-
-export const DEFAULT_IMG_FOLDER = '~/.local/share/grubtheme/images';
-export const DEFAULT_IMG_FILENAME = 'preview.img';
-export const DEFAULT_IMG_PATH = join(DEFAULT_IMG_FOLDER, DEFAULT_IMG_FILENAME);
-export const DEFAULT_IMG_PATH_EXTENDED = join(expandPath(DEFAULT_IMG_FOLDER), DEFAULT_IMG_FILENAME);
-export const MOUNT_POINT_FOLDER = '/mnt/grub-qemu-mounted';
+import { DEFAULT_IMG_PATH, MOUNT_POINT_FOLDER } from '../constants';
 
 export class ImageDriver implements IImageDriver, AsyncDisposable {
 	public isMounted: boolean = false;

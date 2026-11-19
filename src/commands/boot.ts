@@ -1,7 +1,7 @@
 import { program } from 'commander';
 import { runQemu } from '../core/runQemu';
 import { expandPath } from '../helpers/expandPath';
-import { DEFAULT_IMG_PATH_EXTENDED } from '../structures/ImageDriver';
+import { DEFAULT_IMG_PATH_EXTENDED } from '../constants';
 
 export const bootCommand = program
 	.command('boot')

@@ -1,9 +1,10 @@
 import { program } from 'commander';
-import { DEFAULT_IMG_PATH_EXTENDED, ImageDriver } from '../structures/ImageDriver';
+import { ImageDriver } from '../structures/ImageDriver';
 import { LoopDeviceDriver } from '../structures/LoopDeviceDriver';
 import { expandPath } from '../helpers/expandPath';
 import type { VideoResolution } from '../types';
 import { runQemu } from '../core/runQemu';
+import { DEFAULT_IMG_PATH_EXTENDED } from '../constants';
 
 export const previewCommand = program
 	.command('preview')
