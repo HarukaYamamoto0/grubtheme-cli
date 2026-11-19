@@ -1,6 +1,5 @@
 import { program } from 'commander';
-import { ImageSize, QemuImg } from 'qemu-img-ts';
-import { ImageFormat } from '../../../../qemu-img-ts';
+import { ImageFormat, ImageSize, QemuImg } from 'qemu-img-ts';
 import { expandPath } from '../../helpers/expandPath';
 import chalk from 'chalk';
 import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
