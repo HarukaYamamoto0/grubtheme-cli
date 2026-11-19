@@ -1,21 +1,21 @@
-import type { Device } from '../structures/LoopDeviceDriver';
+import type { Device } from '../types';
 
 export interface IImageDriver {
-	// criar o arquivo imagem
+	// Creates the disk image file.
 	create(): Promise<void>;
 
-	// deleta o arquivo de image
+	// Deletes the disk image file.
 	delete(): void;
 
-	// monta a imagem e seu filesystem
+	// Mounts the disk image and its filesystem.
 	mount(device: Device): Promise<void>;
 
-	// desmonta a imagem e seu filesystem
+	// Unmounts the disk image and its filesystem.
 	unmount(): Promise<void>;
 
-	// cria a tabela MBR e a partição de boot
+	// Creates an MBR partition table and a bootable partition.
 	createBootablePartition(): Promise<void>;
 
-	// formata o loop device como
+	// Formats the loop device with an EXT2 filesystem.
 	formatToExt2(device: Device): Promise<void>;
 }

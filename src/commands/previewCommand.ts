@@ -1,41 +1,52 @@
 import { program } from 'commander';
-import { runner } from '../core/runner';
-import { DEFAULT_IMG_PATH, ImageDriver } from '../structures/ImageDriver';
+import { DEFAULT_IMG_PATH_EXTENDED, ImageDriver } from '../structures/ImageDriver';
 import { LoopDeviceDriver } from '../structures/LoopDeviceDriver';
+import { expandPath } from '../helpers/expandPath';
+import type { VideoResolution } from '../types';
+import { runQemu } from '../core/runQemu';
 
 export const previewCommand = program
 	.command('preview')
 	.description('use QEMU to boot a minimal VM in order to test a GRUB theme')
 	.argument('<path>', 'path to theme')
-	.argument('[configFile]', 'path to grub.cfg')
-	.action(async (path: string, configFile?: string) => {
-		const imageDriver = new ImageDriver(DEFAULT_IMG_PATH);
-		await imageDriver.create();
-		await imageDriver.createBootablePartition();
+	.option('-i, --image <path>', 'path to a prepared disk image ready for use with QEMU')
+	.option('-c, --config <config>', 'path to a custom grub.cfg file')
+	.option('-r, --resolution <resolution>', 'resolution supported by the QEMU video adapter')
+	.action(async (path: string, args: { image?: string; config?: string; resolution?: string }) => {
+		const themeDirectory = expandPath(path);
+		const imagePath = args.image ? expandPath(args.image) : DEFAULT_IMG_PATH_EXTENDED;
 
-		const loopDevice = new LoopDeviceDriver(DEFAULT_IMG_PATH);
-		await loopDevice.mount();
+		const imageDriver = new ImageDriver(imagePath);
+		const loopDevice = new LoopDeviceDriver(imagePath);
 
-		if (!loopDevice.device) throw new Error('The device was not mounted correctly');
+		let filesystemMounted = false;
 
-		await imageDriver.formatToExt2(loopDevice.device);
+		try {
+			await loopDevice.mount();
+			filesystemMounted = true;
 
-		await imageDriver.mount(loopDevice.device);
-		await loopDevice.installGrub();
-		await loopDevice.copyConfigFile(configFile);
-		await loopDevice.copyTheme(path);
+			if (!loopDevice.device) throw new Error('The device was not mounted correctly');
+			await imageDriver.mount(loopDevice.device);
 
-		await imageDriver.unmount();
-		await loopDevice.unmount();
+			if (args.config) await loopDevice.copyConfigFile(expandPath(args.config));
 
-		await runner([
-			'qemu-system-x86_64',
-			'-full-screen',
-			'-display',
-			'gtk,full-screen=on,zoom-to-fit=on,show-menubar=off,grab-on-hover=on',
-			'-m',
-			'128M',
-			'-drive',
-			`file=${DEFAULT_IMG_PATH},format=raw`,
-		]);
+			// TODO: Restore this flag to its original state after execution.
+			// However, the disk image must be unmounted before launching QEMU
+			// to avoid concurrent access to the underlying filesystem.
+			if (args.resolution) await loopDevice.setGrubResolution(args.resolution as VideoResolution);
+
+			await loopDevice.copyTheme(themeDirectory);
+		} finally {
+			try {
+				if (filesystemMounted) {
+					await imageDriver.unmount();
+				}
+			} finally {
+				if (loopDevice.device) {
+					await loopDevice.unmount();
+				}
+			}
+		}
+
+		await runQemu(imagePath);
 	});

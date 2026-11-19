@@ -1,4 +1,4 @@
-import type { Device } from '../structures/LoopDeviceDriver';
+import type { Device } from '../types';
 
 export interface ILoopDeviceDriver {
 	mount(path?: string): Promise<Device>;

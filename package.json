@@ -30,6 +30,7 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
+		"chalk": "^6.0.1",
 		"commander": "^15.1.0",
 		"common-tags": "^1.8.2",
 		"qemu-img-ts": "^0.1.3"
