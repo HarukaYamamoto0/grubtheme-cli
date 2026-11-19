@@ -1,11 +1,12 @@
 import { program } from 'commander';
 import { expandPath } from '../../helpers/expandPath';
-import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED, ImageDriver } from '../../structures/ImageDriver';
 import chalk from 'chalk';
 import { LoopDeviceDriver } from '../../structures/LoopDeviceDriver';
 import type { VideoResolution } from '../../types';
-
-export const DEFAULT_IMG_RESOLUTION: VideoResolution = '1920x1080';
+import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
+import { ImageDriver } from '../../structures/ImageDriver';
+import { createGrubConfigFile } from '../../assets/grub-config-file';
+import { rmSync } from 'node:fs';
 
 export const prepareCommand = program
 	.command('prepare')
@@ -46,7 +47,12 @@ export const prepareCommand = program
 			await loopDevice.installGrub();
 
 			console.debug(chalk.gray('copying the custom grub.cfg file into the disk image...'));
-			await loopDevice.copyConfigFile(args.config);
+			if (args.config) await loopDevice.copyConfigFile(args.config);
+			else {
+				const configPath = await createGrubConfigFile();
+				await loopDevice.copyConfigFile(configPath);
+				rmSync(configPath, { recursive: true });
+			}
 
 			if (args.resolution) {
 				if (!/^(?:auto|[1-9]\d*x[1-9]\d*(?:,auto)?)$/.test(args.resolution)) {

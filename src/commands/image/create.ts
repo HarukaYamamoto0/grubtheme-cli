@@ -1,9 +1,9 @@
 import { program } from 'commander';
-import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../structures/ImageDriver';
 import { ImageSize, QemuImg } from 'qemu-img-ts';
 import { ImageFormat } from '../../../../qemu-img-ts';
 import { expandPath } from '../../helpers/expandPath';
 import chalk from 'chalk';
+import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
 
 export const createCommand = program
 	.command('create')
