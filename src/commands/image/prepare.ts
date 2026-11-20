@@ -7,6 +7,7 @@ import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
 import { ImageDriver } from '../../structures/ImageDriver';
 import { createGrubConfigFile } from '../../assets/grub-config-file';
 import { rmSync } from 'node:fs';
+import { debuglog } from 'node:util';
 
 export const prepareCommand = program
 	.command('prepare')
@@ -17,6 +18,8 @@ export const prepareCommand = program
 	.action(async (path: string, args: { config?: string; resolution?: string }) => {
 		const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
 
+		const log = debuglog('image-prepare');
+
 		const fileExists = await Bun.file(imagePath).exists();
 		if (!fileExists) throw new Error('the specified disk image path does not exist: ' + imagePath);
 
@@ -25,28 +28,28 @@ export const prepareCommand = program
 
 		let filesystemMounted = false;
 
-		console.debug(chalk.gray('creating a bootable partition...'));
+		log(chalk.gray('creating a bootable partition...'));
 		await imageDriver.createBootablePartition();
 
 		try {
-			console.debug(chalk.gray('setting up a loop device for the disk image: ' + imagePath));
+			log(chalk.gray('setting up a loop device for the disk image: ' + imagePath));
 			await loopDevice.mount();
 
 			if (!loopDevice.device)
 				throw new Error('failed to attach the loop device to the disk image at ' + imagePath);
-			else console.debug(chalk.green('loop device successfully attached ' + loopDevice.device));
+			else log(chalk.green('loop device successfully attached ' + loopDevice.device));
 
-			console.debug(chalk.gray('formatting the disk image as EXT2...'));
+			log(chalk.gray('formatting the disk image as EXT2...'));
 			await imageDriver.formatToExt2(loopDevice.device);
 
-			console.debug(chalk.gray('mounting the disk image via loop device...'));
+			log(chalk.gray('mounting the disk image via loop device...'));
 			await imageDriver.mount(loopDevice.device);
 			filesystemMounted = true;
 
-			console.debug(chalk.gray('installing GRUB2...'));
+			log(chalk.gray('installing GRUB2...'));
 			await loopDevice.installGrub();
 
-			console.debug(chalk.gray('copying the custom grub.cfg file into the disk image...'));
+			log(chalk.gray('copying the custom grub.cfg file into the disk image...'));
 			if (args.config) await loopDevice.copyConfigFile(args.config);
 			else {
 				const configPath = await createGrubConfigFile();
@@ -59,7 +62,7 @@ export const prepareCommand = program
 					throw new Error(`Invalid GRUB resolution: ${args.resolution}`);
 				}
 
-				console.debug(chalk.gray(`setting the resolution to ${args.resolution} in the configuration file...`));
+				log(chalk.gray(`setting the resolution to ${args.resolution} in the configuration file...`));
 				await loopDevice.setGrubResolution(args.resolution as VideoResolution);
 			}
 
@@ -67,12 +70,12 @@ export const prepareCommand = program
 		} finally {
 			try {
 				if (filesystemMounted) {
-					console.debug('unmounting EXT2 filesystem...');
+					log(chalk.gray('unmounting EXT2 filesystem...'));
 					await imageDriver.unmount();
 				}
 			} finally {
 				if (loopDevice.device) {
-					console.debug('detaching loop device...');
+					log(chalk.gray('detaching loop device...'));
 					await loopDevice.unmount();
 				}
 			}

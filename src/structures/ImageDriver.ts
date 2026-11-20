@@ -21,8 +21,6 @@ export class ImageDriver implements IImageDriver, AsyncDisposable {
 			filename: this.imagePath,
 			size: ImageSize.mb(64),
 		});
-
-		this.isMounted = true;
 	}
 
 	delete(): void {
@@ -33,9 +31,12 @@ export class ImageDriver implements IImageDriver, AsyncDisposable {
 		await this.shell(['sudo', 'mkdir', '-p', MOUNT_POINT_FOLDER]);
 
 		await this.shell(['sudo', 'mount', `${device}p1`, MOUNT_POINT_FOLDER]);
+		this.isMounted = true;
 	}
 
 	async unmount(): Promise<void> {
+		if (!this.isMounted) return;
+
 		await this.shell(['sudo', 'umount', MOUNT_POINT_FOLDER]);
 		this.isMounted = false;
 	}
