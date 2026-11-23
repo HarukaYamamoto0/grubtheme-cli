@@ -66,15 +66,6 @@ else
     terminal_output console
 fi
 
-# Optional fonts originally present in the user's GRUB configuration.
-# Their .pf2 files must exist in the copied theme directory.
-if [ -f $prefix/themes/current-theme/heiti-32.pf2 ]; then
-    loadfont $prefix/themes/current-theme/heiti-32.pf2
-fi
-if [ -f $prefix/themes/current-theme/xiangsu-32.pf2 ]; then
-    loadfont $prefix/themes/current-theme/xiangsu-32.pf2
-fi
-
 if [ -f $prefix/themes/current-theme/theme.txt ]; then
     set theme=$prefix/themes/current-theme/theme.txt
     export theme
