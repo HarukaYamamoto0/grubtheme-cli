@@ -7,7 +7,7 @@ lightweight virtual machine, optimized to run smoothly even on low-end hardware.
 ## Installation
 
 There are two distributions available: a compiled binary, which can be downloaded from
-the [GitHub Releases](https://github.com/HarukaYamamoto0/grubtheme-cli/releases) page, and an npm package published
+the [GitHub Releases](https://github.com/HarukaYamamoto0/grubtheme-cli/releases) page, and a npm package published
 as [grubtheme](https://www.npmjs.com/package/grubtheme).
 
 | Package Manager | Command                    |
@@ -44,7 +44,7 @@ These packages provide the following components:
 
 > [!IMPORTANT]
 > The current implementation supports Linux only. Preparing disk images requires elevated privileges to manage loop
-devices, mount filesystems, and install GRUB2.
+> devices, mount filesystems, and install GRUB2.
 
 ## Usage
 
@@ -110,6 +110,9 @@ to Windows and macOS, although implementing such a driver is considerably more c
 
 The second is to improve error handling throughout the project. I want to ensure that unexpected failures and specific
 edge cases are handled properly, with clear and meaningful error messages instead of obscure system-level errors.
+
+Sure, it might seem a bit complex. There are several TODO comments scattered throughout the codebase, most of which
+cover fairly small, well-defined tasks. You could start with those if you'd like.
 
 ## Known Issues
 
