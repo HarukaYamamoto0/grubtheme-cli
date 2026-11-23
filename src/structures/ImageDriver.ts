@@ -5,6 +5,10 @@ import { ImageFormat, ImageSize, QemuImg } from 'qemu-img-ts';
 import type { Device } from '../types';
 import { DEFAULT_IMG_PATH, MOUNT_POINT_FOLDER } from '../constants';
 
+// TODO: This class currently uses lazy initialization.
+// Consider mounting the image eagerly to avoid repeated state checks
+// required by TypeScript's type system.
+
 export class ImageDriver implements IImageDriver, AsyncDisposable {
 	public isMounted: boolean = false;
 

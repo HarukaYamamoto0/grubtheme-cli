@@ -14,4 +14,12 @@ program.addCommand(previewCommand);
 program.addCommand(imageCommand);
 program.addCommand(bootCommand);
 
+const epipe = (error: NodeJS.ErrnoException): void => {
+	if (error.code === 'EPIPE') process.exit(0);
+	throw error;
+};
+
+process.stdout.on('error', epipe);
+process.stderr.on('error', epipe);
+
 program.parse();

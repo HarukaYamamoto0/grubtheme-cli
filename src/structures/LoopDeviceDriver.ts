@@ -3,7 +3,11 @@ import type { ILoopDeviceDriver } from '../core/ILoopDeviceDriver';
 import { existsSync, rmSync } from 'node:fs';
 import type { Device, VideoResolution } from '../types';
 import { createGrubConfigFile } from '../assets/grub-config-file';
-import { MOUNT_POINT_FOLDER } from '../constants';
+import { MOUNT_POINT_FOLDER, OUTPUT_THEME_PATH } from '../constants';
+
+// TODO: This class currently uses lazy initialization.
+// Consider mounting the image eagerly to avoid repeated state checks
+// required by TypeScript's type system.
 
 export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 	public device: Device | undefined;
@@ -55,15 +59,15 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 			throw new Error('the provided theme directory does not exist: ' + themeDirectory);
 
 		// delete the themes folder to avoid resource conflicts
-		await this.shell(['sudo', 'rm', '-rf', `${MOUNT_POINT_FOLDER}/boot/grub/themes/current-theme`]);
-		await this.shell(['sudo', 'mkdir', '-p', `${MOUNT_POINT_FOLDER}/boot/grub/themes/current-theme`]);
+		await this.shell(['sudo', 'rm', '-rf', OUTPUT_THEME_PATH]);
+		await this.shell(['sudo', 'mkdir', '-p', OUTPUT_THEME_PATH]);
 
 		await this.shell([
 			'sudo',
 			'cp',
 			'-r',
 			`${themeDirectory}/.`, // copy only content
-			`${MOUNT_POINT_FOLDER}/boot/grub/themes/current-theme/`,
+			OUTPUT_THEME_PATH,
 		]);
 	}
 

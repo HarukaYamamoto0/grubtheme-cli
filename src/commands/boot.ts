@@ -7,8 +7,10 @@ export const bootCommand = program
 	.command('boot')
 	.description('simply launch QEMU using an existing disk image')
 	.argument('[path]', 'path to a prepared disk image ready for use with QEMU')
-	.action(async (path?: string) => {
-		const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
+	.action(bootCommandAction);
 
-		await runQemu(imagePath);
-	});
+export async function bootCommandAction(path?: string): Promise<void> {
+	const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
+
+	await runQemu(imagePath);
+}

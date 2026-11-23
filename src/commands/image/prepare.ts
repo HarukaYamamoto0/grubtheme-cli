@@ -1,13 +1,13 @@
 import { program } from 'commander';
 import { expandPath } from '../../helpers/expandPath';
-import chalk from 'chalk';
 import { LoopDeviceDriver } from '../../structures/LoopDeviceDriver';
 import type { VideoResolution } from '../../types';
 import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
 import { ImageDriver } from '../../structures/ImageDriver';
 import { createGrubConfigFile } from '../../assets/grub-config-file';
-import { rmSync } from 'node:fs';
-import { debuglog } from 'node:util';
+import { existsSync, rmSync } from 'node:fs';
+import { Logger } from '../../structures/Logger';
+import { stdoutWrite } from '../../helpers/iolog';
 
 export const prepareCommand = program
 	.command('prepare')
@@ -15,69 +15,72 @@ export const prepareCommand = program
 	.argument('[path]', 'optional path for the disk image to be created', DEFAULT_IMG_PATH)
 	.option('-c, --config <config>', 'path to a custom grub.cfg file')
 	.option('-r, --resolution <resolution>', 'resolution supported by the QEMU video adapter')
-	.action(async (path: string, args: { config?: string; resolution?: string }) => {
-		const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
+	.option('-v, --verbose', 'enable verbose logging', false)
+	.action(prepareCommandAction);
 
-		const log = debuglog('image-prepare');
+export async function prepareCommandAction(
+	path: string,
+	options: { config?: string; resolution?: string; verbose: boolean },
+): Promise<void> {
+	const log = new Logger(`command:${prepareCommand.name()}`, options.verbose);
+	const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
 
-		const fileExists = await Bun.file(imagePath).exists();
-		if (!fileExists) throw new Error('the specified disk image path does not exist: ' + imagePath);
+	if (!existsSync(imagePath)) throw new Error(`the specified disk image path does not exist: ${imagePath}`);
 
-		const imageDriver = new ImageDriver(imagePath);
-		const loopDevice = new LoopDeviceDriver(imagePath);
+	const imageDriver = new ImageDriver(imagePath);
+	const loopDevice = new LoopDeviceDriver(imagePath);
 
-		let filesystemMounted = false;
+	let filesystemMounted = false;
 
-		log(chalk.gray('creating a bootable partition...'));
-		await imageDriver.createBootablePartition();
+	log.trace('creating a bootable partition');
+	await imageDriver.createBootablePartition();
 
+	try {
+		log.trace(`setting up a loop device for the disk image: ${imagePath}`);
+		await loopDevice.mount();
+
+		if (!loopDevice.device) throw new Error(`failed to attach the loop device to the disk image at ${imagePath}`);
+		else log.trace(`loop device successfully attached ${loopDevice.device}`);
+
+		log.trace('formatting the disk image as EXT2');
+		await imageDriver.formatToExt2(loopDevice.device);
+
+		log.trace('mounting the disk image via loop device');
+		await imageDriver.mount(loopDevice.device);
+		filesystemMounted = true;
+
+		log.trace('installing GRUB2...');
+		await loopDevice.installGrub();
+
+		log.trace('copying the custom grub.cfg file into the disk image');
+		if (options.config) await loopDevice.copyConfigFile(options.config);
+		else {
+			const configPath = await createGrubConfigFile();
+			await loopDevice.copyConfigFile(configPath);
+			rmSync(configPath, { recursive: true });
+		}
+
+		if (options.resolution) {
+			if (!/^(?:auto|[1-9]\d*x[1-9]\d*(?:,auto)?)$/.test(options.resolution)) {
+				throw new Error(`Invalid GRUB resolution: ${options.resolution}`);
+			}
+
+			log.trace(`setting the video resolution to ${options.resolution}...`);
+			await loopDevice.setGrubResolution(options.resolution as VideoResolution);
+		}
+	} finally {
 		try {
-			log(chalk.gray('setting up a loop device for the disk image: ' + imagePath));
-			await loopDevice.mount();
-
-			if (!loopDevice.device)
-				throw new Error('failed to attach the loop device to the disk image at ' + imagePath);
-			else log(chalk.green('loop device successfully attached ' + loopDevice.device));
-
-			log(chalk.gray('formatting the disk image as EXT2...'));
-			await imageDriver.formatToExt2(loopDevice.device);
-
-			log(chalk.gray('mounting the disk image via loop device...'));
-			await imageDriver.mount(loopDevice.device);
-			filesystemMounted = true;
-
-			log(chalk.gray('installing GRUB2...'));
-			await loopDevice.installGrub();
-
-			log(chalk.gray('copying the custom grub.cfg file into the disk image...'));
-			if (args.config) await loopDevice.copyConfigFile(args.config);
-			else {
-				const configPath = await createGrubConfigFile();
-				await loopDevice.copyConfigFile(configPath);
-				rmSync(configPath, { recursive: true });
+			if (filesystemMounted) {
+				log.trace(`unmounting EXT2 filesystem from ${imageDriver.imagePath}`);
+				await imageDriver.unmount();
 			}
-
-			if (args.resolution) {
-				if (!/^(?:auto|[1-9]\d*x[1-9]\d*(?:,auto)?)$/.test(args.resolution)) {
-					throw new Error(`Invalid GRUB resolution: ${args.resolution}`);
-				}
-
-				log(chalk.gray(`setting the resolution to ${args.resolution} in the configuration file...`));
-				await loopDevice.setGrubResolution(args.resolution as VideoResolution);
-			}
-
-			console.log(chalk.green('The disk image has been successfully prepared and is ready for a GRUB2 theme!'));
 		} finally {
-			try {
-				if (filesystemMounted) {
-					log(chalk.gray('unmounting EXT2 filesystem...'));
-					await imageDriver.unmount();
-				}
-			} finally {
-				if (loopDevice.device) {
-					log(chalk.gray('detaching loop device...'));
-					await loopDevice.unmount();
-				}
+			if (loopDevice.device) {
+				log.trace(`detaching loop device ${loopDevice.device}`);
+				await loopDevice.unmount();
 			}
 		}
-	});
+	}
+
+	stdoutWrite('disk image prepared successfully.');
+}

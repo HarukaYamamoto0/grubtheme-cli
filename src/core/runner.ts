@@ -1,5 +1,3 @@
-import { debuglog } from 'node:util';
-
 export type Runner = (args: string[]) => Promise<string>;
 
 /**
@@ -11,7 +9,6 @@ export type Runner = (args: string[]) => Promise<string>;
  * @throws RunnerError If the process exits with a non-zero exit code.
  */
 export async function runner(args: string[]): Promise<string> {
-	debuglog('runner')(args.join(' '));
 	const proc = Bun.spawn(args, {
 		stdout: 'pipe',
 		stderr: 'pipe',
