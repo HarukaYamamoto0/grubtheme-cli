@@ -2,7 +2,7 @@ import { type Runner, runner as run } from '../core/runner';
 import type { ILoopDeviceDriver } from '../core/ILoopDeviceDriver';
 import { existsSync, rmSync } from 'node:fs';
 import type { Device, VideoResolution } from '../types';
-import { createGrubConfigFile } from '../assets/grub-config-file';
+import { changeResolution, createGrubConfigFile } from '../assets/grub-config-file';
 import { MOUNT_POINT_FOLDER, OUTPUT_THEME_PATH } from '../constants';
 
 // TODO: This class currently uses lazy initialization.
@@ -87,7 +87,9 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 		const configFile = Bun.file(`${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`);
 		const content = await configFile.text();
 
+		// this temporary file is created to avoid having to run the JavaScript process with sudo privileges
 		const configFileTempPath = await createGrubConfigFile({ content, resolution });
+		await Bun.write(Bun.file(configFileTempPath), changeResolution(content, resolution));
 
 		await this.shell(['sudo', 'cp', configFileTempPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
 
