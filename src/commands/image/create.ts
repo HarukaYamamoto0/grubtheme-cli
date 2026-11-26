@@ -1,9 +1,9 @@
 import { program } from 'commander';
 import { ImageFormat, ImageSize, QemuImg } from 'qemu-img-ts';
 import { expandPath } from '../../helpers/expandPath';
-import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
 import { Logger } from '../../structures/Logger';
 import { stdoutWrite } from '../../helpers/iolog';
+import { DEFAULT_IMG_PATH } from '../../constants';
 
 export const createCommand = program
 	.command('create')
@@ -15,7 +15,7 @@ export const createCommand = program
 export async function createCommandAction(path: string, options: { verbose: boolean }): Promise<void> {
 	const log = new Logger('command:image:create', options.verbose);
 
-	const imagePath = path === DEFAULT_IMG_PATH_EXTENDED ? DEFAULT_IMG_PATH_EXTENDED : expandPath(path);
+	const imagePath = path === DEFAULT_IMG_PATH ? DEFAULT_IMG_PATH : expandPath(path);
 	log.trace(`the disk image path will be ${imagePath}`);
 
 	const qemuImg = new QemuImg();

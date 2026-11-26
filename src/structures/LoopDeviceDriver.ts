@@ -3,7 +3,7 @@ import type { ILoopDeviceDriver } from '../core/ILoopDeviceDriver';
 import { existsSync, rmSync } from 'node:fs';
 import type { Device, VideoResolution } from '../types';
 import { changeResolution, createGrubConfigFile } from '../assets/grub-config-file';
-import { MOUNT_POINT_FOLDER, OUTPUT_THEME_PATH } from '../constants';
+import { MOUNT_POINT_FOLDER, GUEST_CONFIG_FILE_PATH, GUEST_THEME_DIR_PATH } from '../constants';
 
 // TODO: This class currently uses lazy initialization.
 // Consider mounting the image eagerly to avoid repeated state checks
@@ -50,7 +50,7 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 
 		if (!fileExist) throw new Error('the provided configuration file does not exist: ' + configPath);
 
-		await this.shell(['sudo', 'cp', configPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
+		await this.shell(['sudo', 'cp', configPath, GUEST_CONFIG_FILE_PATH]);
 	}
 
 	async copyTheme(themeDirectory: string): Promise<void> {
@@ -59,15 +59,15 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 			throw new Error('the provided theme directory does not exist: ' + themeDirectory);
 
 		// delete the themes folder to avoid resource conflicts
-		await this.shell(['sudo', 'rm', '-rf', OUTPUT_THEME_PATH]);
-		await this.shell(['sudo', 'mkdir', '-p', OUTPUT_THEME_PATH]);
+		await this.shell(['sudo', 'rm', '-rf', GUEST_THEME_DIR_PATH]);
+		await this.shell(['sudo', 'mkdir', '-p', GUEST_THEME_DIR_PATH]);
 
 		await this.shell([
 			'sudo',
 			'cp',
 			'-r',
 			`${themeDirectory}/.`, // copy only content
-			OUTPUT_THEME_PATH,
+			GUEST_THEME_DIR_PATH,
 		]);
 	}
 
@@ -84,14 +84,14 @@ export class LoopDeviceDriver implements ILoopDeviceDriver, AsyncDisposable {
 			throw new Error(`Invalid GRUB resolution: ${resolution}`);
 		}
 
-		const configFile = Bun.file(`${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`);
+		const configFile = Bun.file(GUEST_CONFIG_FILE_PATH);
 		const content = await configFile.text();
 
 		// this temporary file is created to avoid having to run the JavaScript process with sudo privileges
 		const configFileTempPath = await createGrubConfigFile({ content, resolution });
 		await Bun.write(Bun.file(configFileTempPath), changeResolution(content, resolution));
 
-		await this.shell(['sudo', 'cp', configFileTempPath, `${MOUNT_POINT_FOLDER}/boot/grub/grub.cfg`]);
+		await this.shell(['sudo', 'cp', configFileTempPath, GUEST_CONFIG_FILE_PATH]);
 
 		rmSync(configFileTempPath, { recursive: true });
 	}

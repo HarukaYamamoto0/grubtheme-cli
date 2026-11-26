@@ -4,7 +4,7 @@ import { LoopDeviceDriver } from '../structures/LoopDeviceDriver';
 import { expandPath } from '../helpers/expandPath';
 import type { VideoResolution } from '../types';
 import { runQemu } from '../core/runQemu';
-import { DEFAULT_IMG_PATH_EXTENDED } from '../constants';
+import { DEFAULT_IMG_PATH } from '../constants';
 import { Logger } from '../structures/Logger';
 import { stdoutWrite } from '../helpers/iolog';
 
@@ -27,7 +27,7 @@ export async function previewCommandAction(
 	const themeDirectory = expandPath(path);
 	log.trace(`resolved theme path: ${themeDirectory}`);
 
-	const imagePath = options.image ? expandPath(options.image) : DEFAULT_IMG_PATH_EXTENDED;
+	const imagePath = options.image ? expandPath(options.image) : DEFAULT_IMG_PATH;
 	log.trace(`resolved image path: ${imagePath}`);
 
 	const imageDriver = new ImageDriver(imagePath);

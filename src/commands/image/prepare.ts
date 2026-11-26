@@ -2,7 +2,7 @@ import { program } from 'commander';
 import { expandPath } from '../../helpers/expandPath';
 import { LoopDeviceDriver } from '../../structures/LoopDeviceDriver';
 import type { VideoResolution } from '../../types';
-import { DEFAULT_IMG_PATH, DEFAULT_IMG_PATH_EXTENDED } from '../../constants';
+import { DEFAULT_IMG_PATH } from '../../constants';
 import { ImageDriver } from '../../structures/ImageDriver';
 import { createGrubConfigFile } from '../../assets/grub-config-file';
 import { existsSync, rmSync } from 'node:fs';
@@ -23,7 +23,7 @@ export async function prepareCommandAction(
 	options: { config?: string; resolution?: string; verbose: boolean },
 ): Promise<void> {
 	const log = new Logger(`command:${prepareCommand.name()}`, options.verbose);
-	const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH_EXTENDED;
+	const imagePath = path ? expandPath(path) : DEFAULT_IMG_PATH;
 
 	if (!existsSync(imagePath)) throw new Error(`the specified disk image path does not exist: ${imagePath}`);
 

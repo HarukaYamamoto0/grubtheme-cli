@@ -1,13 +1,13 @@
 import type { VideoResolution } from '../types';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
+import { TEMP_DIR } from '../constants';
 
 export async function createGrubConfigFile(params?: {
 	content?: string;
 	resolution?: VideoResolution;
 }): Promise<string> {
-	const tempConfigPath = join(tmpdir(), `grub-${randomUUID()}.cfg`);
+	const tempConfigPath = join(TEMP_DIR, `grub-${randomUUID()}.cfg`);
 
 	let newContent = defaultGrubConfigTemplate;
 	if (params?.content) newContent = params.content;
@@ -66,6 +66,47 @@ else
     terminal_output console
 fi
 
+set theme_dir="$prefix/themes/current-theme"
+
+# Debugging
+insmod serial
+serial --unit=0 --speed=115200
+terminal_output --append serial
+
+# temporarily disable visual output
+terminal_output serial
+
+# Font loading
+insmod font
+insmod regexp
+
+loadfont $prefix/fonts/unicode.pf2
+
+function loadfont_custom {
+    if [ -f "$1" ]; then
+        if loadfont "$1"; then
+            echo "Font loaded: $1"
+        else
+            echo "Failed to load font: $1"
+        fi
+    fi
+}
+
+for font in "$theme_dir"/*.pf2; do
+    loadfont_custom "$font"
+done
+
+if [ -d "$theme_dir/fonts" ]; then
+    for font in "$theme_dir"/fonts/*.pf2; do
+        loadfont_custom "$font"
+    done
+fi
+
+# Restore graphical output
+insmod gfxterm
+terminal_output gfxterm serial
+
+# Theme configuration
 if [ -f $prefix/themes/current-theme/theme.txt ]; then
     set theme=$prefix/themes/current-theme/theme.txt
     export theme
